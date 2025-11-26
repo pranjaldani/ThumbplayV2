@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   Download, Youtube, Image as ImageIcon, RefreshCcw, AlertCircle, 
   Play, Maximize2, Layers, Sun, Moon, Circle, Triangle, Type, 
@@ -7,41 +7,6 @@ import {
 } from 'lucide-react';
 
 export default function AppV2() {
-  // --- Auto-Fix Styling (More Robust) ---
-  // We use useLayoutEffect to inject the script as early as possible
-  useLayoutEffect(() => {
-    // 1. Check if Tailwind is already available globally
-    if (window.tailwind) return;
-
-    // 2. Check if script tag is already in the DOM
-    const existingScript = document.getElementById('tailwind-cdn');
-    if (existingScript) return;
-
-    // 3. Pre-define the Tailwind Config BEFORE loading the script.
-    // This prevents race conditions where Tailwind runs before knowing about custom colors (like slate-950).
-    window.tailwind = {
-      config: {
-        theme: {
-          extend: {
-            colors: {
-              slate: {
-                950: '#020617',
-              }
-            }
-          }
-        }
-      }
-    };
-
-    // 4. Inject the CDN Script
-    const script = document.createElement('script');
-    script.id = 'tailwind-cdn';
-    script.src = 'https://cdn.tailwindcss.com';
-    script.async = true;
-    document.head.appendChild(script);
-
-  }, []);
-
   // --- Core State ---
   const [activeTab, setActiveTab] = useState('button'); // 'button', 'text', 'image', 'layout'
   const [loading, setLoading] = useState(false);
