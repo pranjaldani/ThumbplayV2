@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { 
   Download, Youtube, Image as ImageIcon, RefreshCcw, AlertCircle, 
   Play, Maximize2, Layers, Sun, Moon, Circle, Triangle, Type, 
@@ -7,6 +7,40 @@ import {
 } from 'lucide-react';
 
 export default function AppV2() {
+  // --- BULLETPROOF STYLING FIX ---
+  // This ensures Tailwind loads even if index.html is ignored by the build server
+  useLayoutEffect(() => {
+    // 1. Check if Tailwind is already running
+    if (window.tailwind) return;
+
+    // 2. Check if script is already present
+    const existingScript = document.getElementById('tailwind-cdn');
+    if (existingScript) return;
+
+    // 3. Pre-load configuration to prevent "flash of unstyled content"
+    window.tailwind = {
+      config: {
+        theme: {
+          extend: {
+            colors: {
+              slate: {
+                950: '#020617', // Custom dark background
+              }
+            }
+          }
+        }
+      }
+    };
+
+    // 4. Force-load the script
+    const script = document.createElement('script');
+    script.id = 'tailwind-cdn';
+    script.src = 'https://cdn.tailwindcss.com';
+    script.async = true;
+    document.head.appendChild(script);
+  }, []);
+  // ------------------------------
+
   // --- Core State ---
   const [activeTab, setActiveTab] = useState('button'); // 'button', 'text', 'image', 'layout'
   const [loading, setLoading] = useState(false);
@@ -42,7 +76,7 @@ export default function AppV2() {
   // 2. Play Button
   const [btnConfig, setBtnConfig] = useState({
     visible: true,
-    style: 'circle', // 'youtube', 'circle', 'simple'
+    style: 'circle', // 'youtube', 'circle', 'simple', 'outline'
     effect: 'none',  // 'none', 'glass', 'glow'
     scale: 20,       // % of shortest dimension
     opacity: 100,
@@ -222,7 +256,7 @@ export default function AppV2() {
     // Shape Logic
     ctx.beginPath();
     
-    if (btnConfig.style === 'circle') {
+    if (btnConfig.style === 'circle' || btnConfig.style === 'outline') {
         ctx.arc(cx, cy, size, 0, Math.PI*2);
     } 
     else if (btnConfig.style === 'youtube') {
@@ -257,15 +291,22 @@ export default function AppV2() {
         ctx.lineWidth = 2;
         ctx.stroke();
     } else {
-        // Normal Fill
-        if (btnConfig.style !== 'simple') ctx.fill();
+        // Normal Fill or Outline Stroke
+        if (btnConfig.style === 'outline') {
+            ctx.lineWidth = size * 0.1; // 10% thickness
+            ctx.strokeStyle = palette.fill;
+            ctx.stroke();
+        } else if (btnConfig.style !== 'simple') {
+            ctx.fill();
+        }
     }
     
     ctx.shadowBlur = 0; // Reset shadow for icon
 
     // Icon
     const iconSize = btnConfig.style === 'simple' ? size * 1.2 : size * 0.5;
-    const iconColor = btnConfig.style === 'simple' ? palette.fill : palette.icon;
+    // For outline/simple, match the fill color (e.g. white ring + white icon). For filled buttons, use contrasting icon color.
+    const iconColor = (btnConfig.style === 'simple' || btnConfig.style === 'outline') ? palette.fill : palette.icon;
     
     ctx.fillStyle = iconColor;
     ctx.beginPath();
@@ -514,9 +555,10 @@ export default function AppV2() {
                             <>
                                 <div className="space-y-3">
                                     <label className="text-xs font-bold text-slate-500 uppercase">Style</label>
-                                    <div className="grid grid-cols-3 gap-2">
+                                    <div className="grid grid-cols-2 gap-2">
                                         {[
                                             { id: 'circle', icon: Circle, label: 'Circle' },
+                                            { id: 'outline', icon: Circle, label: 'Outline' },
                                             { id: 'youtube', icon: Youtube, label: 'YouTube' },
                                             { id: 'simple', icon: Triangle, label: 'Simple' },
                                         ].map(s => (
